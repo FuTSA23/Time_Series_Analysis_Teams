@@ -1,0 +1,276 @@
+BELOW ARE THE .ipynb FILES FOR ALL TASKS
+http://localhost:8888/nbconvert/notebook/anaconda3/TASK1.ipynb?download=true
+http://localhost:8888/nbconvert/notebook/anaconda3/TASK2.ipynb?download=true
+http://localhost:8888/nbconvert/notebook/anaconda3/TASK3.ipynb?download=true
+http://localhost:8888/nbconvert/notebook/TASK4.ipynb?download=true
+http://localhost:8888/nbconvert/notebook/TASK5.ipynb?download=true
+http://localhost:8888/nbconvert/notebook/TASK6.ipynb?download=true
+http://localhost:8888/nbconvert/notebook/TASK7.ipynb?download=true
+http://localhost:8888/nbconvert/notebook/TASK8.ipynb?download=true
+
+BELOW ARE THE CODES OF EACH TASK :
+
+     TASK 1
+import yfinance as yf
+import pandas as pd
+import numpy as np
+from scipy import stats
+
+# Load the dataset
+dataset = yf.download('AAPL')
+
+# Check for missing values
+missing_values = dataset['Adj Close'].isnull().sum()
+print("Missing values:", missing_values)
+
+# Handle missing values by forward filling
+dataset['Adj Close'].fillna(method='ffill', inplace=True)
+
+# Detect and remove outliers using z-score
+z_scores = np.abs(stats.zscore(dataset['Adj Close']))
+outliers = np.where(z_scores > 3)[0]
+dataset['Adj Close'].iloc[outliers] = np.nan
+dataset['Adj Close'].fillna(method='ffill', inplace=True)
+
+    TASK 2
+import matplotlib.pyplot as plt
+from statsmodels.tsa.seasonal import seasonal_decompose
+
+# Plot the time series data
+plt.figure(figsize=(10, 6))
+plt.plot(dataset['Adj Close'])
+plt.title('Apple Adjusted Close Price')
+plt.xlabel('Date')
+plt.ylabel('Adjusted Close Price')
+plt.show()
+
+# Apply seasonal decomposition
+result = seasonal_decompose(dataset['Adj Close'], model='additive')
+
+# Plot the decomposed components
+plt.figure(figsize=(10, 8))
+plt.subplot(4, 1, 1)
+plt.plot(result.trend)
+plt.title('Trend')
+plt.subplot(4, 1, 2)
+plt.plot(result.seasonal)
+plt.title('Seasonality')
+plt.subplot(4, 1, 3)
+plt.plot(result.resid)
+plt.title('Residual')
+plt.subplot(4, 1, 4)
+plt.plot(result.observed)
+plt.title('Observed')
+plt.tight_layout()
+plt.show()
+
+# Apply Hodrick-Prescott (HP) filter
+import statsmodels.api as sm
+
+cycle, trend = sm.tsa.filters.hpfilter(dataset['Adj Close'], lamb=1600)
+
+# Plot the decomposed components from HP filter
+plt.figure(figsize=(10, 6))
+plt.subplot(2, 1, 1)
+plt.plot(trend)
+plt.title('Trend (HP Filter)')
+plt.subplot(2, 1, 2)
+plt.plot(cycle)
+plt.title('Cyclical Component (HP Filter)')
+plt.tight_layout()
+plt.show()
+
+     TASK 3
+from statsmodels.tsa.stattools import adfuller, kpss
+
+# Perform ADF test on the original time series
+adf_result = adfuller(dataset['Adj Close'])
+print("ADF test (Original Series):")
+print("ADF Statistic:", adf_result[0])
+print("p-value:", adf_result[1])
+print("Critical Values:", adf_result[4])
+
+# Perform KPSS test on the original time series
+kpss_result = kpss(dataset['Adj Close'])
+print("\nKPSS test (Original Series):")
+print("KPSS Statistic:", kpss_result[0])
+print("p-value:", kpss_result[1])
+print("Critical Values:", kpss_result[3])
+
+# Perform ADF test on the residual obtained from decomposition
+adf_result_residual = adfuller(result.resid.dropna())
+print("\nADF test (Residual Series):")
+print("ADF Statistic:", adf_result_residual[0])
+print("p-value:", adf_result_residual[1])
+print("Critical Values:", adf_result_residual[4])
+
+# Perform KPSS test on the residual obtained from decomposition
+kpss_result_residual = kpss(result.resid.dropna())
+print("\nKPSS test (Residual Series):")
+print("KPSS Statistic:", kpss_result_residual[0])
+print("p-value:", kpss_result_residual[1])
+print("Critical Values:", kpss_result_residual[3])
+
+
+    TASK 4
+# Visualize the original series and the residual series after decomposition
+plt.figure(figsize=(10, 6))
+plt.subplot(2, 1, 1)
+plt.plot(dataset['Adj Close'])
+plt.title('Original Series')
+plt.subplot(2, 1, 2)
+plt.plot(result.resid)
+plt.title('Residual Series')
+plt.tight_layout()
+plt.show()
+
+# Apply differencing to make the series stationary
+dataset['Diff'] = dataset['Adj Close'].diff()
+dataset['Diff'].fillna(method='bfill', inplace=True)
+
+# Apply logarithmic transformation to make the series stationary
+dataset['Log'] = np.log(dataset['Adj Close'])
+
+# Compare the results visually
+plt.figure(figsize=(10, 6))
+plt.subplot(2, 1, 1)
+plt.plot(dataset['Diff'])
+plt.title('Differenced Series')
+plt.subplot(2, 1, 2)
+plt.plot(dataset['Log'])
+plt.title('Log-Transformed Series')
+plt.tight_layout()
+plt.show()
+
+
+    TASK 5
+from scipy.stats import shapiro, probplot
+
+# Perform Shapiro-Wilk test on the original series
+shapiro_orig = shapiro(dataset['Adj Close'])
+print("Shapiro-Wilk test (Original Series):")
+print("Test Statistic:", shapiro_orig.statistic)
+print("p-value:", shapiro_orig.pvalue)
+
+# Perform Shapiro-Wilk test on the transformed series
+shapiro_diff = shapiro(dataset['Diff'].dropna())
+shapiro_log = shapiro(dataset['Log'].dropna())
+print("\nShapiro-Wilk test (Transformed Series):")
+print("Differenced Series - Test Statistic:", shapiro_diff.statistic)
+print("Differenced Series - p-value:", shapiro_diff.pvalue)
+print("Log-Transformed Series - Test Statistic:", shapiro_log.statistic)
+print("Log-Transformed Series - p-value:", shapiro_log.pvalue)
+
+# Plot QQ-plots for visual inspection
+plt.figure(figsize=(10, 6))
+plt.subplot(2, 1, 1)
+probplot(dataset['Adj Close'], plot=plt)
+plt.title('QQ-Plot (Original Series)')
+plt.subplot(2, 1, 2)
+probplot(dataset['Log'].dropna(), plot=plt)
+plt.title('QQ-Plot (Log-Transformed Series)')
+plt.tight_layout()
+plt.show()
+
+
+    TASK 6
+from statsmodels.stats.diagnostic import het_breuschpagan
+from scipy.stats import boxcox
+
+# Test for homoscedasticity using the Breusch-Pagan test on the transformed series
+breusch_pagan_diff = het_breuschpagan(dataset['Diff'].dropna(), dataset[['Adj Close']].dropna())
+breusch_pagan_log = het_breuschpagan(dataset['Log'].dropna(), dataset[['Adj Close']].dropna())
+print("Breusch-Pagan test (Transformed Series):")
+print("Differenced Series - Test Statistic:", breusch_pagan_diff[0])
+print("Differenced Series - p-value:", breusch_pagan_diff[1])
+print("Log-Transformed Series - Test Statistic:", breusch_pagan_log[0])
+print("Log-Transformed Series - p-value:", breusch_pagan_log[1])
+
+# Apply Box-Cox transformation to normalize the data and stabilize variance
+transformed_diff, lambda_diff = boxcox(dataset['Diff'].dropna())
+transformed_log, lambda_log = boxcox(dataset['Log'].dropna())
+
+# Visualize the transformed series
+plt.figure(figsize=(10, 6))
+plt.subplot(2, 1, 1)
+plt.plot(transformed_diff)
+plt.title('Box-Cox Transformed (Differenced Series)')
+plt.subplot(2, 1, 2)
+plt.plot(transformed_log)
+plt.title('Box-Cox Transformed (Log-Transformed Series)')
+plt.tight_layout()
+plt.show()
+
+
+    TASK 7
+from statsmodels.tsa.ar_model import AutoReg
+from sklearn.metrics import mean_squared_error, mean_absolute_error
+from sklearn.model_selection import train_test_split
+
+# Fit an autoregressive (AR) model to the transformed and stationary series
+X_diff = transformed_diff[:-1]
+y_diff = transformed_diff[1:]
+X_train_diff, X_test_diff, y_train_diff, y_test_diff = train_test_split(X_diff, y_diff, test_size=0.2, random_state=0)
+model_diff = AutoReg(y_train_diff, lags=5)
+model_diff_fit = model_diff.fit()
+
+X_log = transformed_log[:-1]
+y_log = transformed_log[1:]
+X_train_log, X_test_log, y_train_log, y_test_log = train_test_split(X_log, y_log, test_size=0.2, random_state=0)
+model_log = AutoReg(y_train_log, lags=5)
+model_log_fit = model_log.fit()
+
+# Validate the model by splitting the data into training and testing sets
+predictions_diff = model_diff_fit.predict(start=len(X_train_diff), end=len(X_train_diff) + len(X_test_diff) - 1)
+predictions_log = model_log_fit.predict(start=len(X_train_log), end=len(X_train_log) + len(X_test_log) - 1)
+
+# Evaluate the model's performance using mean squared error and mean absolute error
+mse_diff = mean_squared_error(y_test_diff, predictions_diff)
+mae_diff = mean_absolute_error(y_test_diff, predictions_diff)
+mse_log = mean_squared_error(y_test_log, predictions_log)
+mae_log = mean_absolute_error(y_test_log, predictions_log)
+
+print("AR Model Performance (Differenced Series):")
+print("Mean Squared Error:", mse_diff)
+print("Mean Absolute Error:", mae_diff)
+print("\nAR Model Performance (Log-Transformed Series):")
+print("Mean Squared Error:", mse_log)
+print("Mean Absolute Error:", mae_log)
+
+
+   TASK 8
+from statsmodels.tsa.ar_model import AutoReg
+from sklearn.metrics import mean_squared_error, mean_absolute_error
+from sklearn.model_selection import train_test_split
+
+# Fit an autoregressive (AR) model to the transformed and stationary series
+X_diff = transformed_diff[:-1]
+y_diff = transformed_diff[1:]
+X_train_diff, X_test_diff, y_train_diff, y_test_diff = train_test_split(X_diff, y_diff, test_size=0.2, random_state=0)
+model_diff = AutoReg(y_train_diff, lags=5)
+model_diff_fit = model_diff.fit()
+
+X_log = transformed_log[:-1]
+y_log = transformed_log[1:]
+X_train_log, X_test_log, y_train_log, y_test_log = train_test_split(X_log, y_log, test_size=0.2, random_state=0)
+model_log = AutoReg(y_train_log, lags=5)
+model_log_fit = model_log.fit()
+
+# Validate the model by splitting the data into training and testing sets
+predictions_diff = model_diff_fit.predict(start=len(X_train_diff), end=len(X_train_diff) + len(X_test_diff) - 1)
+predictions_log = model_log_fit.predict(start=len(X_train_log), end=len(X_train_log) + len(X_test_log) - 1)
+
+# Evaluate the model's performance using mean squared error and mean absolute error
+mse_diff = mean_squared_error(y_test_diff, predictions_diff)
+mae_diff = mean_absolute_error(y_test_diff, predictions_diff)
+mse_log = mean_squared_error(y_test_log, predictions_log)
+mae_log = mean_absolute_error(y_test_log, predictions_log)
+
+print("AR Model Performance (Differenced Series):")
+print("Mean Squared Error:", mse_diff)
+print("Mean Absolute Error:", mae_diff)
+print("\nAR Model Performance (Log-Transformed Series):")
+print("Mean Squared Error:", mse_log)
+print("Mean Absolute Error:", mae_log)
+
+   
